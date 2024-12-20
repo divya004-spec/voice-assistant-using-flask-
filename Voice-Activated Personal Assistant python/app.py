@@ -3,11 +3,13 @@ from flask import Flask, request, jsonify, render_template
 import speech_recognition as sr
 import pyttsx3
 import requests
+import queue
 
 app = Flask(__name__)
 engine = pyttsx3.init()
 recognizer = sr.Recognizer()
 reminders = []
+speech_queue = queue.Queue()
 
 # Function to convert text to speech
 def speak(text):
@@ -20,9 +22,14 @@ def recognize_speech():
         recognizer.adjust_for_ambient_noise(source)
         speak("Listening now...")
         audio = recognizer.listen(source)
-        command = recognizer.recognize_google(audio)
-        print(f"Command: {command}")
-        return command
+        try:
+            command = recognizer.recognize_google(audio)
+            print(f"Command: {command}")
+            speech_queue.put(command)  # Put command in queue for later use
+        except sr.UnknownValueError:
+            speech_queue.put("Sorry, I could not understand your command.")
+        except sr.RequestError:
+            speech_queue.put("Sorry, there was an issue with the speech service.")
 
 # Route for the homepage
 @app.route('/')
@@ -36,10 +43,19 @@ def process_voice():
         # Run the speech recognition in a separate thread
         voice_thread = threading.Thread(target=recognize_speech)
         voice_thread.start()
-        voice_thread.join()  # Wait for the thread to finish
-        return jsonify({"status": "Listening and processing completed."})
+        # Send a temporary response while waiting for the result
+        return jsonify({"status": "Listening... Please wait for processing."})
     except Exception as e:
         return jsonify({"error": str(e)})
+
+# Route to fetch the result of speech processing
+@app.route('/get_command_result', methods=['GET'])
+def get_command_result():
+    if not speech_queue.empty():
+        command = speech_queue.get()
+        return jsonify({"command": command})
+    else:
+        return jsonify({"status": "No command processed yet."})
 
 # Route to set reminders
 @app.route('/set_reminder', methods=['POST'])
