@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant</title>
+    <style>
+        /* General Reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent 70%);
+            animation: moveBg 6s infinite linear;
+            z-index: -1;
+        }
+
+        @keyframes moveBg {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-50%, -50%); }
+        }
+
+        /* Main Content */
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        #speak-button {
+            background: #fff;
+            color: #4facfe;
+            border: none;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+
+        #speak-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        #speak-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(79, 172, 254, 0.4);
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.3); }
+        }
+
+        #loader {
+            display: none;
+            margin: 20px auto;
+            border: 4px solid #fff;
+            border-radius: 50%;
+            border-top: 4px solid #00f2fe;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #response {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Assistant</h1>
+        <button id="speak-button" onclick="startVoice()">
+            <i class="fa fa-microphone"></i>
+        </button>
+        <div id="loader"></div>
+        <div id="response"></div>
+    </div>
+
+    <script>
+        async function startVoice() {
+            const loader = document.getElementById('loader');
+            const responseDiv = document.getElementById('response');
+            loader.style.display = 'block';
+            responseDiv.textContent = ''; // Clear previous response
+
+            try {
+                const response = await fetch('/process_voice', { method: 'POST' });
+                const data = await response.json();
+                loader.style.display = 'none';
+
+                if (data.command) {
+                    responseDiv.textContent = `You said: "${data.command}"`;
+                } else {
+                    responseDiv.textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                loader.style.display = 'none';
+                responseDiv.textContent = 'An error occurred while processing your request.';
+            }
+        }
+    </script>
+</body>
+</html>
